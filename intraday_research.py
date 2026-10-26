@@ -156,7 +156,7 @@ def execute(s, events, symbol, bar, at):
          "signal_bar":pending["signal_bar"],"pnl":pnl,"mock":True}
     s["trades"].insert(0,t)
     s["trades"]=s["trades"][:200]
-    log(s,events,at,"PAPER_FILL",symbol,**t)
+    log(s,events,at,"PAPER_FILL",symbol,**{k:v for k,v in t.items() if k!="symbol"})
 
 def queue(s,events,symbol,bar,at,decision,ind):
     if decision["action"]=="HOLD":
@@ -207,6 +207,9 @@ def cycle(history, now, state=None, errors=None):
         if not bars:
             problems.setdefault(sym,"No completed 15-minute bars from provider")
             continue
+        if fresh(now) and (now-(dt.datetime.fromisoformat(bars[-1]["time"])+dt.timedelta(minutes=15))).total_seconds()>45*60:
+            problems.setdefault(sym,"Latest completed intraday bar is more than 45 minutes old")
+            continue
         if last is None:
             eligible=eligible[-1:] # Never backfill fake executions on initial launch
         elif len(eligible)>3:
@@ -243,6 +246,10 @@ def cycle(history, now, state=None, errors=None):
             reason=reason,indicators=ind,checks=checks)
         queue(s,events,sym,bar,now,scan,ind)
         s["latest_bar"][sym]=bar_time
+        if sym=="SPY":
+            if s["start_benchmark"] is None:
+                s["start_benchmark"]=bar["close"]
+            s["benchmark_last"]=bar["close"]
     if all_new:
         t=max(a[0] for a in all_new)
         s["equity"].append({"bar":t,"value":round(net(s),2)})
@@ -264,7 +271,9 @@ def cycle(history, now, state=None, errors=None):
           "positions":s["positions"],"pending":s["pending"],
           "trades":s["trades"][:100],"audit":s["events"][:100],
           "history":s["equity"],"total_events":s["total_events"],"runs":s["runs"],
-          "last_bars":s["latest_bar"],"starting_cash":INITIAL}
+          "last_bars":s["latest_bar"],"starting_cash":INITIAL,
+          "spy_buy_hold_pct":round(100*(s.get("benchmark_last", s["start_benchmark"] or 1)/(s["start_benchmark"] or 1)-1),2) if s["start_benchmark"] else None,
+          "portfolio_return_pct":round(100*(net(s)/INITIAL-1),2)}
     return s,events,view
 
 def save(s,events,view):
@@ -293,6 +302,13 @@ def self_test():
     s,e,v=cycle(history,now,state=init())
     assert v["status"]=="UPDATED" and len(v["updated_symbols"])==len(WATCH)
     assert not v["trades"],"Never invent a fill during first scan"
+    # Direct paper order fill test, including audit record.
+    s2=init()
+    s2["pending"]["AAPL"]={"side":"BUY","qty":2,"signal_bar":"2026-10-22T14:30:00+00:00","reason":"fixture"}
+    ev=[]
+    execute(s2,ev,"AAPL",{"time":"2026-10-23T14:30:00+00:00","open":100.0,"close":101.0},now)
+    assert s2["positions"]["AAPL"]["qty"]==2 and len(s2["trades"])==1
+    assert any(x["type"]=="PAPER_FILL" for x in ev)
     before=s["total_events"]
     s,e,v=cycle(history,now,state=s)
     assert not v["updated_symbols"] and not v["trades"],"Repeat run must not create trades"
