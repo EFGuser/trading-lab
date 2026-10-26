@@ -3,6 +3,42 @@
 This is an educational research app. It is not a real-time exchange feed and not the ChatGPT model. It does not place real brokerage orders. It requires no paid OpenAI API calls.
 
 
+
+## Streaming Research Lab (experimental, disconnected by default)
+
+**Web viewer:** https://efguser.github.io/trading-lab/streaming.html
+
+**Streaming backend:** `streaming_lab.py` implements an independently saved minute-bar paper account, authenticated read-only JSON and Server-Sent Events (SSE), and a WebSocket connection to Massive's stock minute aggregates feed. It does not place real trades, retrain GPT, access brokerage accounts or automatically subscribe to a market-data service.
+
+### Status and cost
+
+- The streaming source is **not configured** in this repository and the backend is **not deployed**. The website clearly displays **NOT CONNECTED** until a private relay is available.
+- The existing **daily and 15-minute simulators continue running on GitHub Actions at no OpenAI API cost**. The experimental private streaming engine adds no charges until you separately activate an eligible provider plan and suitable running backend.
+- Massive's free Stocks Basic plan does **not** include WebSocket access. Per-minute U.S. stock feeds are delayed on some paid plans and real-time only on certain higher plans; provider availability, market hours, licensing and prices can change. See https://massive.com/docs/websocket/stocks/aggregates-per-minute and the provider's current plan table.
+- This is a **separate virtual account** starting at $10,000. It collects at least 80 actual completed one-minute bars per ticker before evaluating EMA12/48, RSI14, volume, ATR and breakouts. No fabricated market data is ever substituted. After the previous bar is observed, mock orders can fill only at a following observed bar's opening price. Gaps cancel unfilled paper orders; mock fills assume idealized executions, fees and slippage.
+
+### Private server setup (only if you already have legitimate feed access)
+
+Use Python 3.12+ on your own computer or a suitable server. Install the dependency from `requirements-stream.txt`, then set environment variables **privately** on the server:
+
+- `MASSIVE_API_KEY` — stock minute-aggregate provider key, **never place in GitHub or frontend HTML**.
+- `MASSIVE_FEED=delayed` or `MASSIVE_FEED=realtime` — use only the feed that your provider plan actually entitles you to.
+- `STREAM_VIEW_TOKEN` — randomly generated private bearer token, at least 24 characters.
+- `STREAM_ALLOWED_ORIGIN=https://efguser.github.io` — approved frontend origin.
+- `STREAM_BIND=127.0.0.1` and `PORT=8849` — defaults for private local development.
+
+Start `python streaming_lab.py` only after configuring the server. It exposes **authenticated read-only** `/snapshot` and `/events` routes, with the latter pushing updated snapshots over SSE. The browser viewer requires a **private HTTPS relay URL** and a viewer token entered by the user; neither the viewer token nor provider key belongs in a public repository. For public-network hosting, configure TLS, appropriate access controls, a persistent disk for the `runtime/` directory, and check market-data redistribution licenses before making any quote data accessible. The server defaults to localhost on purpose. GitHub Pages cannot run this process.
+
+### Test without a data subscription
+
+Run `python streaming_lab.py --self-test` for repeatable artificial-bar unit tests: warmup, duplicate rejection, no-lookahead next-bar mock fills, gap cancellation, provider outage and syntax checks. These tests do not connect to the market-data provider, and **test fixtures never appear in the live trading dashboard**. GitHub Actions runs them under **Streaming Engine Safety Tests** whenever the streaming implementation changes.
+
+### Known limitations
+
+- Restarting the streaming backend preserves virtual positions and journal in `runtime/` only when storage is persistent. A new host without this directory starts a separate account.
+- Provider WebSockets may deliver revised bars, missing one-minute bars, exchange delays and disconnections. This prototype records original completed bars and ignores revisions/duplicates; it does not simulate order-book dynamics, exchange halts, dividends, or actual execution quality.
+- Public GitHub Pages refresh alone cannot provide real-time quotes. A continuously running backend with permitted feed access is required for private near-live research. **This project remains paper-only.**
+
 ## Intraday monitoring (new)
 
 Visit the **[15-minute paper trading monitor](https://efguser.github.io/trading-lab/intraday.html)**. The homepage also checks the intraday report every 60 seconds.
