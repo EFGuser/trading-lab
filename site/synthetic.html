@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Swing Trading Lab</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui;background:#07121f;color:#edf5ff}
+*{box-sizing:border-box}body{margin:0;padding:24px;background:radial-gradient(ellipse at top right,#163451,#07121f 60%)}main{max-width:1250px;margin:auto}h1{margin:0;font-size:30px}h2{font-size:17px;margin-top:0}.hint{color:#9ab1c4}.small{font-size:12px}.tag{display:inline-block;border:1px solid #337768;border-radius:20px;color:#84e9be;padding:5px 9px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.two{display:grid;grid-template-columns:3fr 2fr;gap:12px;margin:12px 0}.card{background:#112236;border:1px solid #294156;border-radius:14px;padding:18px}.metric{font-size:26px;font-weight:750;margin:8px 0}.good{color:#73e2b4}.bad{color:#ff9ca8}button{background:#18354d;color:#edf5ff;border:1px solid #46627b;padding:12px;border-radius:10px;text-align:left;cursor:pointer;width:100%;margin:5px 0}button.active{border-color:#8ac9fa;background:#214663}canvas{width:100%;height:285px;display:block}.feed{max-height:380px;overflow:auto}.item{padding:10px 0;border-bottom:1px solid #294156}.row{display:flex;justify-content:space-between;gap:12px}table{width:100%;border-collapse:collapse}td,th{text-align:left;border-bottom:1px solid #294156;padding:8px}th{color:#9ab1c4}footer{padding:18px 0;color:#9ab1c4}@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}
+</style></head><body><main>
+<div class="tag">PAPER TRADING · SYNTHETIC DATA</div><h1>AI Swing Trading Lab</h1>
+<p class="hint">Scheduled autonomous strategy experiments. No real trades, prices, or ChatGPT model connection.</p>
+<div class="grid">
+<div class="card"><div class="hint">Simulated days</div><div class="metric" id="days">—</div></div>
+<div class="card"><div class="hint">Adaptive paper equity</div><div class="metric" id="balance">—</div></div>
+<div class="card"><div class="hint">Adaptive return</div><div class="metric" id="gain">—</div></div>
+<div class="card"><div class="hint">Training rounds</div><div class="metric" id="epochs">—</div></div>
+</div>
+<div class="two"><div class="card"><h2>Portfolio performance</h2><canvas id="equity"></canvas><p class="hint small">Selected agent: blue · Adaptive researcher: green · $10,000 baseline: grey</p></div>
+<div class="card"><h2>Competing virtual agents</h2><div id="bots"></div></div></div>
+<div class="two"><div class="card"><h2>Fictional market price</h2><canvas id="price"></canvas><p class="hint small">Prices are generated, not quotes from any real ticker.</p></div>
+<div class="card"><h2>Selected agent details</h2><div id="details"></div></div></div>
+<div class="two"><div class="card"><h2>Learning history</h2><div class="feed" id="experiments"></div></div>
+<div class="card"><h2>Virtual trading journal</h2><div style="overflow:auto"><table><thead><tr><th>Day</th><th>Action</th><th>Shares</th><th>Price</th></tr></thead><tbody id="trades"></tbody></table></div></div></div>
+<footer><p id="status">Loading the latest snapshot…</p><p>Research engine: fixed rules and parameter search, not GPT retraining. Automated batches are scheduled through GitHub Actions and may be delayed. Results on simulated data are not evidence of future stock-market returns.</p></footer>
+</main><script>
+const $=id=>document.getElementById(id),cash=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),pct=n=>(n>=0?'+':'')+(n*100).toFixed(2)+'%';
+let s=null,selected='Adaptive Researcher';
+function line(id,series,colors){const c=$(id),ctx=c.getContext('2d'),ratio=devicePixelRatio||1,w=Math.max(c.clientWidth,100),h=Math.max(c.clientHeight,100);
+c.width=w*ratio;c.height=h*ratio;ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,w,h);
+const arr=series.flat().filter(Number.isFinite);if(!arr.length)return;let lo=Math.min(...arr),hi=Math.max(...arr),pad=Math.max(hi-lo,1)*.1;lo-=pad;hi+=pad;let left=48,top=8,right=8,bottom=24;
+for(let i=0;i<5;i++){let y=top+(h-top-bottom)*i/4;ctx.strokeStyle='#294156';ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(w-right,y);ctx.stroke();ctx.fillStyle='#a4b7c9';ctx.font='11px sans-serif';ctx.fillText((hi-(hi-lo)*i/4).toFixed(0),4,y+4)}
+const n=Math.max(...series.map(a=>a.length));series.forEach((a,k)=>{ctx.beginPath();ctx.strokeStyle=colors[k];ctx.lineWidth=k===0?2.5:1.5;let first=true;a.forEach((v,i)=>{if(!Number.isFinite(v))return;const x=left+(w-left-right)*i/Math.max(1,n-1),y=top+(h-top-bottom)*(hi-v)/(hi-lo);if(first){ctx.moveTo(x,y);first=false}else ctx.lineTo(x,y)});ctx.stroke()})}
+function render(d){s=d;let aa=d.agents['Adaptive Researcher'],a=d.agents[selected]||aa;
+$('days').textContent=d.day;$('balance').textContent=cash(aa.equity.at(-1));$('epochs').textContent=d.epoch;let g=aa.equity.at(-1)/10000-1;
+$('gain').textContent=pct(g);$('gain').className='metric '+(g>=0?'good':'bad');
+$('bots').innerHTML=['Adaptive Researcher','Moving Average','RSI Reversion','Breakout'].map(n=>{let b=d.agents[n],ret=b.equity.at(-1)/10000-1;return '<button data-name="'+n+'" class="'+(selected===n?'active':'')+'"><span class="row"><strong>'+n+'</strong><b class="'+(ret>=0?'good':'bad')+'">'+pct(ret)+'</b></span><span class="hint small">'+cash(b.equity.at(-1))+' · '+b.orders+' orders · '+(b.max_dd*100).toFixed(1)+'% drawdown</span></button>'}).join('');
+$('bots').querySelectorAll('button').forEach(b=>b.onclick=()=>{selected=b.dataset.name;render(s)});
+line('equity',[a.equity,aa.equity,Array(Math.max(a.equity.length,aa.equity.length)).fill(10000)],['#8ebaff','#73e2b4','#8394a7']);
+line('price',[d.candles.map(x=>x.c)],['#f3bb79']);
+const p=selected==='Adaptive Researcher'?d.champion:({'Moving Average':{kind:'ma',fast:10,slow:30},'RSI Reversion':{kind:'rsi',entry:30,exit:55},'Breakout':{kind:'breakout',entry:20,exit:10}})[selected];
+$('details').innerHTML='<p><b>Strategy:</b> '+p.kind+'</p><p><b>Parameters:</b> '+JSON.stringify(p)+'</p><p><b>Virtual cash:</b> '+cash(a.cash)+'</p><p><b>Shares held:</b> '+a.shares+'</p><p><b>Win count:</b> '+a.wins+' of '+a.round_trips+' round trips</p><p><b>Max drawdown:</b> '+(a.max_dd*100).toFixed(2)+'%</p><p><b>Latest decision:</b> '+a.last_decision.action+'</p><p class="hint small" id="why"></p>';
+$('why').textContent=a.last_decision.reason;
+$('experiments').innerHTML=d.experiments.length?d.experiments.slice(0,20).map(e=>'<div class="item"><b class="'+(e.accepted?'good':'')+'">Round '+e.epoch+' · '+(e.accepted?'ACCEPTED':'REJECTED')+'</b><div class="hint small">'+e.tested+' candidates; validation '+e.test_score+' vs '+e.old_score+'</div><div class="hint small">'+e.note+'</div></div>').join(''):'<p class="hint">Research starts on simulation day 5.</p>';
+$('trades').innerHTML=a.journal.length?a.journal.slice(0,20).map(t=>'<tr><td>'+t.day+'</td><td class="'+(t.action==='BUY'?'good':'bad')+'">'+t.action+'</td><td>'+t.qty+'</td><td>'+cash(t.price)+'</td></tr>').join(''):'<tr><td colspan="4" class="hint">No virtual fills yet.</td></tr>';
+$('status').textContent='Latest scheduled batch: '+(d.last_run_utc||'unknown')+' · Data: SYNTHETIC';
+}
+async function load(){try{let r=await fetch('data/snapshot.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('not ready');render(await r.json())}catch(e){$('status').textContent='Awaiting first scheduled run. In GitHub, open Actions → Paper Trading Research → Run workflow.'}}
+load();setInterval(load,60000);window.addEventListener('resize',()=>s&&render(s));
+</script></body></html>
