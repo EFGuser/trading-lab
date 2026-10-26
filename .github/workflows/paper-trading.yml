@@ -1,8 +1,15 @@
 name: Paper Trading Research
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'market_research.py'
+      - 'site/index.html'
+      - '.github/workflows/paper-trading.yml'
+      - 'requirements.txt'
   schedule:
-    - cron: '17 */6 * * *'
+    - cron: '20 23 * * 1-5'
 permissions:
   contents: write
   pages: write
@@ -24,15 +31,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Simulate five market days
-        run: python research.py --days 5
-      - name: Persist synthetic simulation
+      - name: Validate research engine
+        run: |
+          python -m py_compile market_research.py
+          python market_research.py --self-test
+      - name: Install market-data client
+        run: pip install -r requirements.txt
+      - name: Scan completed daily market bars and update paper account
+        run: python market_research.py
+      - name: Persist activity journal and public snapshot
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/state.json site/data/snapshot.json
-          git commit -m "Save synthetic research [skip ci]" || echo "No changes"
-          git push origin HEAD:main
+          git add data/market_state.json data/market_audit.jsonl site/data/market_snapshot.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update market data paper trading audit [skip ci]"
+            git push origin HEAD:main
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
