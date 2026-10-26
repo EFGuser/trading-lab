@@ -6,6 +6,8 @@ on:
     paths:
       - 'market_research.py'
       - 'site/index.html'
+      - 'site/streaming.html'
+      - 'streaming_lab.py'
       - '.github/workflows/paper-trading.yml'
       - 'requirements.txt'
   schedule:
