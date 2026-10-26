@@ -344,7 +344,9 @@ def make_app(engine,token,origin):
         engine.clients.add(q)
         response=web.StreamResponse(status=200,headers={
             "Content-Type":"text/event-stream","Cache-Control":"no-cache",
-            "X-Accel-Buffering":"no"})
+            "X-Accel-Buffering":"no","Access-Control-Allow-Origin":origin,
+            "Access-Control-Allow-Headers":"Authorization,Content-Type",
+            "Vary":"Origin"})
         await response.prepare(request)
         try:
             await response.write(("data: "+json.dumps(engine.snapshot())+"\n\n").encode())
