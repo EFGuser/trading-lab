@@ -266,8 +266,8 @@ def run_cycle(prices_by_symbol, now=None, state=None, source_errors=None):
             continue
         # All pending orders fill at the NEXT available daily open, before today's close is read.
         for sym, (j, bar) in daily.items():
-            if sym in state["orders_pending"] and
-                    state["orders_pending"][sym]["signal_session"]<session:
+            if (sym in state["orders_pending"] and
+                    state["orders_pending"][sym]["signal_session"]<session):
                 fill_order(state, events, sym, bar)
         for sym, (j,bar) in daily.items():
             values=indicators(clean[sym][:j+1]) if j>=54 else None
@@ -331,7 +331,7 @@ def self_test():
     bars=fixture("AAPL")
     assert indicators(bars)["sma20"]>0
     assert reasoned_signal("AAPL",indicators(bars),None)[0] in ("HOLD","BUY")
-    fixed=dt.datetime(2026,5,1,22,tzinfo=dt.timezone.utc)
+    fixed=dt.datetime(2026,4,7,22,tzinfo=dt.timezone.utc)
     price_data={sym:bars for sym in WATCHLIST}
     a,events,view=run_cycle(price_data,now=fixed,state=new_state())
     assert a["last_session"]==bars[-1]["date"]
