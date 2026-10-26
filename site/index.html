@@ -7,6 +7,14 @@
 </style></head><body><main>
 <div class="top"><div><div class="eyebrow">AUTONOMOUS RESEARCH / NO REAL ORDERS</div><h1>Trading Lab</h1><div class="muted">Daily market-data swing trading • observable rule engine • virtual money</div></div><span class="pill warning" id="status">Awaiting market snapshot</span></div>
 <div class="notice"><strong>Not live tick data.</strong> Prices come from completed daily Yahoo Finance bars accessed through yfinance, which may be delayed or unavailable. This site never connects to a brokerage and never recommends placing a real order. Scans and mock fills update only when the scheduled job successfully processes a new session.</div>
+<section class="card" style="margin:15px 0;border-color:#3a786a">
+ <div class="top"><div><h2>Intraday paper trading monitor</h2><p class="small muted">Scheduled checks of completed 15-minute market bars. Not a guaranteed live exchange feed.</p></div>
+ <a class="link" href="intraday.html">Open live-updating research view →</a></div>
+ <div class="mini-grid"><div class="stat"><span class="label">Engine status</span><strong id="imStatus">Waiting</strong></div>
+ <div class="stat"><span class="label">Mock account</span><strong id="imEquity">—</strong></div>
+ <div class="stat"><span class="label">Latest bar</span><strong id="imBar">—</strong></div>
+ <div class="stat"><span class="label">Simulated orders</span><strong id="imOrders">—</strong></div></div>
+ <p class="small muted" id="imUpdated">The page checks for a new intraday snapshot once a minute. GitHub processing may be delayed.</p></section>
 <section class="cards">
 <div class="card"><div class="label">Paper portfolio value</div><div class="big" id="value">—</div><div class="small muted">Virtual starting value $10,000</div></div>
 <div class="card"><div class="label">Return since launch</div><div class="big" id="ret">—</div><div class="small muted">Unrealized included</div></div>
@@ -40,4 +48,21 @@ const errors=Object.entries(s.errors||{});E('errors').innerHTML=errors.length?er
 E('trades').innerHTML=(s.transactions||[]).map(t=>'<tr><td>'+esc(t.date)+'</td><td><b>'+esc(t.symbol)+'</b></td><td><span class="status '+esc(t.action)+'">'+esc(t.action)+'</span> '+t.qty+'</td><td>'+fmt(t.price)+'</td><td>'+(t.pnl===null?'—':fmt(t.pnl))+'</td><td class="small muted">'+esc(t.reason)+'</td></tr>').join('')||'<tr><td class="muted" colspan="6">No virtual fills yet. First signal must wait until the next completed daily session.</td></tr>';renderActivity()}
 E('eventFilter').addEventListener('change',()=>model&&renderActivity());
 async function load(){try{let r=await fetch('data/market_snapshot.json?x='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('No report yet');render(await r.json())}catch(e){E('status').textContent='Awaiting first scan';E('source').textContent='Run the GitHub Actions workflow to generate the first report.'}}load();setInterval(load,60000);window.addEventListener('resize',()=>model&&plot(model.equity_history||[]));
-</script></body></html>
+</script><script>
+async function loadIntradaySummary(){
+ try{
+ const response=await fetch('data/intraday_snapshot.json?ts='+Date.now(),{cache:'no-store'});
+ if(!response.ok)throw Error('No file');
+ const s=await response.json();
+ const newest=Object.values(s.last_bars||{}).sort().at(-1)||'No bars';
+ document.getElementById('imStatus').textContent=s.status.replaceAll('_',' ');
+ document.getElementById('imEquity').textContent='+Number(s.equity).toFixed(2);
+ document.getElementById('imBar').textContent=newest.slice(0,16).replace('T',' ');
+ document.getElementById('imOrders').textContent=(s.trades||[]).length;
+ document.getElementById('imUpdated').textContent='Last GitHub scan: '+s.timestamp_utc+' · Provider: 15-minute bars, may be delayed. Refreshes this page every 60 seconds.';
+ }catch(e){document.getElementById('imStatus').textContent='Not started';
+ document.getElementById('imUpdated').textContent='The intraday Actions workflow must complete its first successful run.';}
+}
+loadIntradaySummary();setInterval(loadIntradaySummary,60000);
+</script>
+</body></html>
