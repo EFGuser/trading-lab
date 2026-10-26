@@ -1,6 +1,20 @@
-# Trading Lab — paper swing trading using daily market prices
+# Trading Lab — transparent daily and intraday paper trading
 
 This is an educational research app. It is not a real-time exchange feed and not the ChatGPT model. It does not place real brokerage orders. It requires no paid OpenAI API calls.
+
+
+## Intraday monitoring (new)
+
+Visit the **[15-minute paper trading monitor](https://efguser.github.io/trading-lab/intraday.html)**. The homepage also checks the intraday report every 60 seconds.
+
+- An additional **Intraday Paper Trading Monitor** workflow is scheduled at minute 08, 23, 38, and 53 of UTC hours 13–22 on weekdays. The script requests data only during approximately 9:45 a.m.–4:40 p.m. New York local time, handling daylight-saving time. Holidays, provider outages, GitHub delays and missing 15-minute bars may result in no new results.
+- It uses completed **15-minute Yahoo Finance bars** (unofficial yfinance), with an additional eight-minute buffer. It is **NOT guaranteed real-time market data**. A separate TradingView chart can update independently, but does NOT drive the paper-trading algorithm and may also be delayed.
+- A different mock $10,000 account evaluates EMA12 vs EMA48, 14-period RSI, relative volume, ATR volatility, and a breakout/reclaim trigger. It records every scan, filtered-out stock, blocked order, queued order, hypothetical fill, and data warning. No actual brokerage orders are possible.
+- A virtual signal on one bar can fill only using a **later completed bar's OPEN** and is labeled as an estimated fill. It may be cancelled if scans are missed. Fees, slippage, 1% risk budget, 20% allocation cap and a 3-position limit are used.
+- Each update writes `data/intraday_state.json`, `data/intraday_audit.jsonl`, and `site/data/intraday_snapshot.json`. The dashboard re-fetches the published snapshot every minute while open. Snapshot publication can lag behind a market event.
+- Includes an SPY buy-and-hold return comparison from the monitor's first observed SPY price.
+
+**About "live":** GitHub Pages is static and cannot maintain a stream or run an agent continuously. The free configuration provides automatically refreshed *near-live/delayed* snapshots, not guaranteed tick-by-tick quotes or instantaneous mock execution. Truly streaming exchange quotes and immediate execution simulations require a suitable licensed data service and always-running backend, potentially with fees.
 
 ## Overview
 
