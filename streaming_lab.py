@@ -353,7 +353,7 @@ def make_app(engine,token,origin):
                     data=await asyncio.wait_for(q.get(),timeout=20)
                     await response.write(("data: "+data+"\n\n").encode())
                 except asyncio.TimeoutError:
-                    await response.write(b": keepalive\n\n")
+                    await response.write(("data: "+json.dumps(engine.snapshot())+"\n\n").encode())
         except (ConnectionError,asyncio.CancelledError,RuntimeError):
             pass
         finally:
