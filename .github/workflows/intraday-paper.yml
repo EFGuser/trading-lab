@@ -45,7 +45,16 @@ jobs:
           git add -A data site/data
           if ! git diff --cached --quiet; then
             git commit -m "Save observed intraday paper trades [skip ci]"
-            git push origin HEAD:main
+            for attempt in 1 2 3; do
+              git pull --rebase origin main
+              if git push origin HEAD:main; then
+                break
+              fi
+              if [ "$attempt" -eq 3 ]; then
+                echo "Unable to publish state after retries" >&2
+                exit 1
+              fi
+            done
           fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
