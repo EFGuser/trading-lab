@@ -1,0 +1,34 @@
+name: Streaming Engine Safety Tests
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'streaming_lab.py'
+      - 'site/streaming.html'
+      - '.github/workflows/streaming-tests.yml'
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify offline streaming paper engine
+        run: |
+          python -m py_compile streaming_lab.py
+          python streaming_lab.py --self-test
+      - name: Verify dashboard is safely offline by default
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          html=Path("site/streaming.html").read_text()
+          assert 'NOT CONNECTED' in html
+          assert 'MASSIVE_API_KEY' not in html
+          assert 'STREAM_VIEW_TOKEN' not in html
+          assert 'http:' not in html
+          print("PASS: public viewer does not embed API keys or start live without a relay")
+          PY
