@@ -1,0 +1,6 @@
+# Private streaming research records and secrets
+runtime/
+.env
+.env.*
+__pycache__/
+*.pyc
