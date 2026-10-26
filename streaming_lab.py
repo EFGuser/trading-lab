@@ -299,10 +299,12 @@ async def provider(engine,key,mode):
                                         # Minute aggregates are finalized after bar end.
                                         # Treat streaming messages as observations, not instant fills.
                                         end=dt.datetime.fromtimestamp(bar["end"]/1000,UTC)
-                                        if utc_now() >= end+dt.timedelta(seconds=3):
-                                            async with engine.lock:
-                                                engine.on_bar(bar)
-                                                await engine.notify()
+                                        wait=(end+dt.timedelta(seconds=3)-utc_now()).total_seconds()
+                                        if wait>0:
+                                            await asyncio.sleep(min(wait,5))
+                                        async with engine.lock:
+                                            engine.on_bar(bar)
+                                            await engine.notify()
                         elif frame.type in (aiohttp.WSMsgType.ERROR,aiohttp.WSMsgType.CLOSED):
                             break
                 raise ConnectionError("Market WebSocket disconnected")
@@ -375,10 +377,13 @@ def test():
         def test_warmup_and_duplicate(self):
             e=Engine(empty())
             start=dt.datetime(2026,10,26,17,15,tzinfo=UTC)
-            for i in range(85):e.on_bar(self.fake(i),start)
+            for i in range(85):
+                b=self.fake(i)
+                e.on_bar(b,dt.datetime.fromtimestamp(b["end"]/1000,UTC)+dt.timedelta(seconds=6))
             self.assertEqual(len(e.s["bars"]["AAPL"]),85)
             self.assertEqual(len(e.s["scans"]),1)
-            e.on_bar(self.fake(84),start)
+            b=self.fake(84)
+            e.on_bar(b,dt.datetime.fromtimestamp(b["end"]/1000,UTC)+dt.timedelta(seconds=6))
             self.assertEqual(len(e.s["bars"]["AAPL"]),85)
         def test_parser_rejects_invalid(self):
             self.assertIsNone(parse_aggregate({"ev":"T","sym":"AAPL"}))
@@ -391,15 +396,17 @@ def test():
             e.s["pending"]["AAPL"]={"side":"BUY","qty":2,
                 "signal_start":self.fake(84)["start"],"signal_bar":"test","why":"test"}
             self.assertEqual(len(e.s["trades"]),0)
-            e.on_bar(nextbar,start)
+            e.on_bar(nextbar,dt.datetime.fromtimestamp(nextbar["end"]/1000,UTC)+dt.timedelta(seconds=6))
             self.assertEqual(len(e.s["trades"]),1)
             self.assertTrue(e.s["trades"][0]["paper_only"])
         def test_gap_cancels_queue(self):
             e=Engine(empty())
             start=dt.datetime(2026,10,26,17,15,tzinfo=UTC)
-            e.on_bar(self.fake(1),start)
+            b=self.fake(1)
+            e.on_bar(b,dt.datetime.fromtimestamp(b["end"]/1000,UTC)+dt.timedelta(seconds=6))
             e.s["pending"]["AAPL"]={"side":"BUY","qty":2,"signal_start":self.fake(1)["start"],"signal_bar":"test","why":"test"}
-            e.on_bar(self.fake(10),start)
+            b=self.fake(10)
+            e.on_bar(b,dt.datetime.fromtimestamp(b["end"]/1000,UTC)+dt.timedelta(seconds=6))
             self.assertFalse(e.s["trades"])
             self.assertFalse(e.s["pending"])
         def test_provider_outage_cannot_trade(self):
