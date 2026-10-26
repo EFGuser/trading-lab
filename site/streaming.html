@@ -37,7 +37,7 @@ by('message').textContent='Connected viewer. Last server report: '+s.server_utc+
 }
 function disconnect(){if(abort)abort.abort();abort=null;connected=false;token='';by('token').value='';setStatus('NOT CONNECTED',false);by('message').textContent='Disconnected. No credentials retained. The remote paper-trading engine continues only if its server stays running.';if(watchTimer)clearInterval(watchTimer)}
 by('disconnect').onclick=disconnect;
-by('connect').onclick=async()=>{disconnect();backend=by('endpoint').value.trim().replace(/\/+$/,'');token=by('token').value.trim();
+by('connect').onclick=async()=>{const enteredToken=by('token').value.trim();const enteredBackend=by('endpoint').value.trim().replace(/\/+$/,'');disconnect();backend=enteredBackend;token=enteredToken;
 if(!/^https:\/\//.test(backend) || token.length<24){by('message').textContent='Use a private HTTPS relay URL and a viewer token of at least 24 characters. Do not use your market feed API key.';return}
 abort=new AbortController();const controller=abort;setStatus('CONNECTING',false);by('message').textContent='Connecting to your private research relay...';
 try{const response=await fetch(backend+'/events',{headers:{Authorization:'Bearer '+token,Accept:'text/event-stream'},signal:controller.signal,cache:'no-store'});
