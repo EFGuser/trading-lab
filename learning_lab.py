@@ -233,11 +233,11 @@ def forward_tick(s,ev,data,calendar,policy,account_key="forward"):
     a=s[account_key];latest=calendar[-1];last=a["last_session"]
     if last==latest:return "NO_NEW_SESSION"
     prev_index=calendar.index(last) if last in calendar else None
-    if prev_index is not None and len(calendar)-prev_index>4:
+    if prev_index is not None and len(calendar)-prev_index>2:
         for sym in list(a["pending"]):
-            emit(s,ev,"PAPER_CANCEL",latest,symbol=sym,reason="Historical session gap, do not invent fills")
+            emit(s,ev,"PAPER_CANCEL",latest,symbol=sym,reason="One or more sessions were missed; never invent a delayed paper fill")
         a["pending"]={}
-        emit(s,ev,"PAPER_GAP",latest,reason="Reconnected after more than 3 trading sessions; old orders cancelled")
+        emit(s,ev,"PAPER_GAP",latest,reason="Missed trading sessions; stale orders cancelled without hypothetical fills")
     elif prev_index is not None:
         for sym,order in list(a["pending"].items()):
             a["pending"].pop(sym,None)
@@ -381,6 +381,20 @@ def self_test():
     assert forward_tick(a,ev,data,days+[new_date],{"style":"rotation","n":10})=="NEW_SESSION"
     assert a["forward"]["journal"],"Second observed session must fill pending virtual trade"
     assert any(x["type"]=="PAPER_FILL" for x in ev)
+    # Missed one session: cancel old virtual queued trades, never pretend
+    # the order filled at an observed later opening.
+    b=fresh()
+    forward_tick(b,[],data,days,{"style":"rotation","n":20})
+    after_two=[new_date,str(dt.date.fromisoformat(new_date)+dt.timedelta(days=1))]
+    for d in after_two[1:]:
+        for series in data.values():
+            prev=series[new_date]
+            series[d]={"o":prev["c"],"c":prev["c"]*1.01,
+                       "h":prev["c"]*1.03,"l":prev["c"]*.99,"v":1000000}
+    gap_events=[]
+    forward_tick(b,gap_events,data,days+after_two,{"style":"rotation","n":20})
+    assert not b["forward"]["journal"],"Missed market session cannot fill queued paper order"
+    assert any(x["type"]=="PAPER_CANCEL" for x in gap_events)
     assert any(p["style"]=="rotation" for p in [x["policy"] for x in result["candidates"]])
     print("PASS: chronological splits, next-bar backtest, non-backdated forward orders, idempotence, fills")
 
