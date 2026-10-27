@@ -16,6 +16,15 @@
  <div class="stat"><span class="label">Simulated orders</span><strong id="imOrders">—</strong></div></div>
  <p class="small muted" id="imUpdated">The page checks for a new intraday snapshot once a minute. GitHub processing may be delayed.</p></section>
 <section class="card" style="margin:15px 0;border-color:#537b8e"><div class="top"><div><h2>Streaming research — next-generation lab</h2><p class="small muted">Private WebSocket research engine and authenticated live-event dashboard, with replay-tested virtual orders. Actual streaming is NOT configured until a licensed market-data connection and hosting are supplied.</p></div><a class="link" href="streaming.html">Explore streaming-ready dashboard →</a></div><div class="small muted">Your current free daily and 15-minute paper traders remain unchanged. Streaming credentials are never put into this public site.</div></section>
+<section class="card" style="margin:15px 0;border-color:#3e806d">
+ <div class="top"><div><h2>New: Strategy Learning Arena</h2>
+ <p class="small muted">Historical strategy competitions with actual daily stock bars, a complete replay trade journal, and two separate forward-only virtual portfolios.</p></div>
+ <a class="link" href="learning.html">Open learning dashboard →</a></div>
+ <div class="mini-grid"><div class="stat"><span class="label">Strategies tested</span><strong id="learnCount">—</strong></div>
+ <div class="stat"><span class="label">Historical simulated trades</span><strong id="learnBacktests">—</strong></div>
+ <div class="stat"><span class="label">Prospective queued orders</span><strong id="learnPending">—</strong></div>
+ <div class="stat"><span class="label">Last real daily bar</span><strong id="learnDate">—</strong></div></div>
+ <p class="small muted" id="learnNote">Past-data backtests are not live trades. New mock orders fill only once a later trading session is observed.</p></section>
 <section class="cards">
 <div class="card"><div class="label">Paper portfolio value</div><div class="big" id="value">—</div><div class="small muted">Virtual starting value $10,000</div></div>
 <div class="card"><div class="label">Return since launch</div><div class="big" id="ret">—</div><div class="small muted">Unrealized included</div></div>
@@ -65,5 +74,22 @@ async function loadIntradaySummary(){
  document.getElementById('imUpdated').textContent='The intraday Actions workflow must complete its first successful run.';}
 }
 loadIntradaySummary();setInterval(loadIntradaySummary,60000);
+</script>
+<script>
+async function learningSummary(){
+ try{
+  const res=await fetch('data/learning_snapshot.json?t='+Date.now(),{cache:'no-store'});
+  if(!res.ok)throw Error('not generated');
+  const s=await res.json();
+  document.getElementById('learnCount').textContent=s.research.trained_count;
+  document.getElementById('learnBacktests').textContent=s.shadow_strategies.reduce((count,p)=>count+p.evaluation.trades.length,0);
+  document.getElementById('learnPending').textContent=Object.keys(s.forward.pending||{}).length+Object.keys(s.explorer.pending||{}).length;
+  document.getElementById('learnDate').textContent=s.latest_session;
+  document.getElementById('learnNote').textContent='Chosen strategy: '+s.policy.style+'. Explorer and learner accounts are each virtual $10,000 research simulations. Last experiment '+s.updated_utc;
+ }catch(e){
+  document.getElementById('learnNote').textContent='Learning research snapshot not available yet. See GitHub Actions → Learning Strategy Arena.';
+ }
+}
+learningSummary();setInterval(learningSummary,60000);
 </script>
 </body></html>
