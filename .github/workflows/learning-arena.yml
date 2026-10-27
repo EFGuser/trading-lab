@@ -1,0 +1,64 @@
+name: Learning Strategy Arena
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'learning_lab.py'
+      - 'site/learning.html'
+      - '.github/workflows/learning-arena.yml'
+  schedule:
+    - cron: '38 23 * * 1-5'
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: trading-lab-updates
+  cancel-in-progress: false
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run deterministic safety and no-lookahead tests
+        run: |
+          python -m py_compile learning_lab.py
+          python learning_lab.py --self-test
+      - name: Install free historical research market-data client
+        run: pip install -r requirements.txt
+      - name: Execute historical strategy competition and prospective paper-account scan
+        run: python learning_lab.py
+      - name: Save trade journal and strategy learning results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/learning_state.json data/learning_audit.jsonl site/data/learning_snapshot.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update learning arena paper trades [skip ci]"
+            for attempt in 1 2 3; do
+              git pull --rebase origin main
+              if git push origin HEAD:main; then
+                break
+              fi
+              if [ "$attempt" -eq 3 ]; then
+                echo "Could not safely persist strategy results" >&2
+                exit 1
+              fi
+            done
+          fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - uses: actions/deploy-pages@v4
+        id: deploy
