@@ -40,7 +40,8 @@ def fresh():
     return {"version":1,"forward":{"cash":START,"positions":{},"pending":{},
             "journal":[],"equity":[],"last_session":None},"study_events":[],
             "study_dates":[],"decision_log":[],"selected":None,"last_research":None,
-            "total_events":0}
+            "explorer":{"cash":START,"positions":{},"pending":{},
+            "journal":[],"equity":[],"last_session":None},"total_events":0}
 def ohlc(symbol):
     import yfinance as yf
     history=yf.Ticker(symbol).history(period="1y",interval="1d",auto_adjust=True,
@@ -225,11 +226,11 @@ def emit(s,ev,event,session,**extras):
     s["study_events"]=s["study_events"][:150]
     s["total_events"]+=1
 
-def forward_tick(s,ev,data,calendar,policy):
+def forward_tick(s,ev,data,calendar,policy,account_key="forward"):
     """Forward paper account starts only today, never backdated.
        Queued orders fill at the first *future observed* session open.
     """
-    a=s["forward"];latest=calendar[-1];last=a["last_session"]
+    a=s[account_key];latest=calendar[-1];last=a["last_session"]
     if last==latest:return "NO_NEW_SESSION"
     prev_index=calendar.index(last) if last in calendar else None
     if prev_index is not None and len(calendar)-prev_index>4:
@@ -300,12 +301,26 @@ def cycle(data,s=None):
             emit(s,ev,"POLICY_UPDATE",calendar[-1],old=previous,new=s["selected"],
                  explanation="Selected via separate chronological validation; not GPT weight training")
     choice=s["selected"] or result["champion"]
-    mode=forward_tick(s,ev,data,calendar,choice) if is_new else "NO_NEW_SESSION"
+    mode=forward_tick(s,ev,data,calendar,choice,"forward") if is_new else "NO_NEW_SESSION"
+    if is_new:forward_tick(s,ev,data,calendar,{"style":"rotation","n":20},"explorer")
     a=s["forward"]
+    x=s["explorer"]
+    explorers=[]
+    for policy in (BASE,{"style":"rotation","n":20},
+                   {"style":"momentum","n":20},{"style":"trend","n":20,"slow":50},
+                   {"style":"reversion","n":43},{"style":"breakout","n":10}):
+        replay=simulate(policy,data,calendar,max(80,len(calendar)-90),len(calendar),record=True)
+        explorers.append({"policy":policy,"evaluation":replay,
+                          "kind":"HISTORICAL_BACKTEST_ONLY"})
     view={"updated_utc":stamp(),"latest_session":calendar[-1],"mode":mode,
           "source":"Yahoo Finance historical daily OHLCV through yfinance — NOT real-time",
           "engine":"Rule-based walk-forward strategy search, no GPT API",
-          "policy":choice,"research":result,"forward":{"cash":usd(a["cash"]),
+          "policy":choice,"research":result,"shadow_strategies":explorers,
+          "explorer":{"policy":{"style":"rotation","n":20},
+           "cash":usd(x["cash"]),"portfolio":usd(worth(x,{sym:data[sym][calendar[-1]]["c"] for sym in x["positions"] if calendar[-1] in data.get(sym,{})})),
+           "positions":x["positions"],"pending":x["pending"],
+           "journal":x["journal"][-100:][::-1],"equity":x["equity"],"last_session":x["last_session"]},
+          "forward":{"cash":usd(a["cash"]),
            "portfolio":usd(worth(a,{sym:data[sym][calendar[-1]]["c"] for sym in a["positions"]
                 if calendar[-1] in data.get(sym,{})})),
            "positions":a["positions"],"pending":a["pending"],
@@ -366,6 +381,7 @@ def self_test():
     assert forward_tick(a,ev,data,days+[new_date],{"style":"rotation","n":10})=="NEW_SESSION"
     assert a["forward"]["journal"],"Second observed session must fill pending virtual trade"
     assert any(x["type"]=="PAPER_FILL" for x in ev)
+    assert any(p["style"]=="rotation" for p in [x["policy"] for x in result["candidates"]])
     print("PASS: chronological splits, next-bar backtest, non-backdated forward orders, idempotence, fills")
 
 def main():
