@@ -4,6 +4,18 @@ This is an educational research app. It is not a real-time exchange feed and not
 
 
 
+## Learning Strategy Arena — active and no-cost
+
+**[Open learning dashboard](https://efguser.github.io/trading-lab/learning.html)**
+
+The `learning_lab.py` engine uses up to a year of actual **completed daily Yahoo Finance market bars** (unofficial yfinance; possibly delayed, adjusted, or unavailable) to backtest 13 deterministic rule-parameter combinations, including trend, momentum, rotation, RSI reversion, breakouts and a passive SPY reference. It then uses chronological **training → validation → untouched historical holdout**. The validation window chooses a rule; the holdout is for evaluation only and must not be interpreted as independently verified future returns.
+
+Each generated historical replay journal is explicitly labeled **BACKTEST**; these virtual buys/sells DID NOT occur live. Alongside them, the system starts two separate **prospective** $10,000 virtual accounts: a selected-policy learner and a 20-session relative-strength explorer. On the first run, orders are **queued** based on the latest completed close. The engine does not fabricate retrospective forward fills. An order can only be virtually filled when a **later real daily bar** has been observed, at that bar's opening price with fee and slippage assumptions. Trades, queued orders, learning selections, and the full audit are saved on GitHub in separate state, log and snapshot files.
+
+The **Learning Strategy Arena** GitHub workflow runs after U.S. market close on weekdays (23:38 UTC) and on changes to its implementation. GitHub Actions may delay/skip runs. No OpenAI API is used, and strategy learning is parameter selection/backtesting — NOT a continuously retrained GPT model. This lab never submits real broker orders. Successful historical trades and backtested performance do not predict real results, and the exploratory rotation strategy can lose money, even virtually.
+
+---
+
 ## Streaming Research Lab (experimental, disconnected by default)
 
 **Web viewer:** https://efguser.github.io/trading-lab/streaming.html
