@@ -96,3 +96,17 @@
 {"observed_utc":"2026-10-30T02:55:16+00:00","type":"SCAN","session":"2026-10-29","symbol":"TE","decision":"SKIP","evidence":"20-session relative strength -23.3%; rotate into top two \u2713"}
 {"observed_utc":"2026-10-30T02:55:16+00:00","type":"PAPER_QUEUE","session":"2026-10-29","symbol":"AAPL","side":"BUY","why":"20-session relative strength +5.6%; rotate into top two \u2713","execution":"NEXT_NEW_SESSION_OPEN"}
 {"observed_utc":"2026-10-30T02:55:16+00:00","type":"PAPER_QUEUE","session":"2026-10-29","symbol":"MSFT","side":"BUY","why":"20-session relative strength +3.4%; rotate into top two \u2713","execution":"NEXT_NEW_SESSION_OPEN"}
+{"observed_utc":"2026-10-31T02:42:30+00:00","type":"RESEARCH","session":"2026-10-30","selected":{"style":"buy_hold","n":20},"training_end":"2026-07-16","validation_end":"2026-09-11","holdout_start":"2026-09-14","holdout_return":-0.07,"benchmark_return":-0.07,"candidates":13,"note":"Policy chosen using training/validation only. Holdout is a historical backtest."}
+{"observed_utc":"2026-10-31T02:42:30+00:00","type":"POLICY_UPDATE","session":"2026-10-30","old":null,"new":{"style":"buy_hold","n":20},"explanation":"Selected via separate chronological validation; not GPT weight training"}
+{"observed_utc":"2026-10-31T02:42:30+00:00","type":"SCAN","session":"2026-10-30","symbol":"SPY","decision":"TARGET","evidence":"Passive SPY benchmark"}
+{"observed_utc":"2026-10-31T02:42:30+00:00","type":"PAPER_QUEUE","session":"2026-10-30","symbol":"SPY","side":"BUY","why":"Passive SPY benchmark","execution":"NEXT_NEW_SESSION_OPEN"}
+{"observed_utc":"2026-10-31T02:42:30+00:00","type":"SCAN","session":"2026-10-30","symbol":"QQQ","decision":"SKIP","evidence":"20-session relative strength -7.9%; rotate into top two \u2713"}
+{"observed_utc":"2026-10-31T02:42:30+00:00","type":"SCAN","session":"2026-10-30","symbol":"AAPL","decision":"TARGET","evidence":"20-session relative strength +3.3%; rotate into top two \u2713"}
+{"observed_utc":"2026-10-31T02:42:30+00:00","type":"SCAN","session":"2026-10-30","symbol":"NVDA","decision":"SKIP","evidence":"20-session relative strength -12.5%; rotate into top two \u2713"}
+{"observed_utc":"2026-10-31T02:42:30+00:00","type":"SCAN","session":"2026-10-30","symbol":"MSFT","decision":"TARGET","evidence":"20-session relative strength +0.8%; rotate into top two \u2713"}
+{"observed_utc":"2026-10-31T02:42:30+00:00","type":"SCAN","session":"2026-10-30","symbol":"AMD","decision":"SKIP","evidence":"20-session relative strength -20.4%; rotate into top two \u2713"}
+{"observed_utc":"2026-10-31T02:42:30+00:00","type":"SCAN","session":"2026-10-30","symbol":"AMZN","decision":"SKIP","evidence":"20-session relative strength -4.4%; rotate into top two \u2713"}
+{"observed_utc":"2026-10-31T02:42:30+00:00","type":"SCAN","session":"2026-10-30","symbol":"GOOGL","decision":"SKIP","evidence":"20-session relative strength -18.5%; rotate into top two \u2713"}
+{"observed_utc":"2026-10-31T02:42:30+00:00","type":"SCAN","session":"2026-10-30","symbol":"TE","decision":"SKIP","evidence":"20-session relative strength -31.1%; rotate into top two \u2713"}
+{"observed_utc":"2026-10-31T02:42:30+00:00","type":"PAPER_QUEUE","session":"2026-10-30","symbol":"AAPL","side":"BUY","why":"20-session relative strength +3.3%; rotate into top two \u2713","execution":"NEXT_NEW_SESSION_OPEN"}
+{"observed_utc":"2026-10-31T02:42:30+00:00","type":"PAPER_QUEUE","session":"2026-10-30","symbol":"MSFT","side":"BUY","why":"20-session relative strength +0.8%; rotate into top two \u2713","execution":"NEXT_NEW_SESSION_OPEN"}
